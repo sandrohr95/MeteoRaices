@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import styled from 'styled-components';
 import SearchCity from './SearchCity';
 import device from '../responsive/Device';
-import Result from './Result';
+// import Result from './Result';
 import NotFound from './NotFound';
 import raicesImage from '../assets/Raices-logo.png';
 import { readCSV, removeAccent, helpBrowser } from './function';
+
+const Result = React.lazy(() => import('./Result'));
 
 const AppTitle = styled.h1`
   display: block;
@@ -213,7 +215,9 @@ class App extends React.Component {
             change={this.handleInputChange}
             submit={this.handleSearchCity}
           />
-          {weatherInfo && <Result weather={weatherInfo} />}
+          <Suspense fallback={<div>Buscando Municipio...</div>}>
+            {weatherInfo && <Result weather={weatherInfo} />}
+          </Suspense>
           {error && <NotFound error={error} />}
         </WeatherWrapper>
       </>
