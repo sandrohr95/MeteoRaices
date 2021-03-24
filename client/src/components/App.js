@@ -4,8 +4,8 @@ import SearchCity from './SearchCity';
 import device from '../responsive/Device';
 import Result from './Result';
 import NotFound from './NotFound';
-import raicesImage from '../assets/Raices-logo.png'
-import {replaceByCode} from './Municipios';
+import raicesImage from '../assets/Raices-logo.png';
+import { readCSV, removeAccent, helpBrowser } from './function';
 
 const AppTitle = styled.h1`
   display: block;
@@ -16,9 +16,9 @@ const AppTitle = styled.h1`
   font-weight: 400;
   color: #ffffff;
   transition: 0.3s 1.4s;
-  opacity: ${({showLabel}) => (showLabel ? 1 : 0)};
+  opacity: ${({ showLabel }) => (showLabel ? 1 : 0)};
 
-  ${({secondary}) =>
+  ${({ secondary }) =>
     secondary &&
     `
     opacity: 1;
@@ -44,7 +44,7 @@ const AppTitle = styled.h1`
     
   `}
 
-  ${({showResult}) =>
+  ${({ showResult }) =>
     showResult &&
     `
     opacity: 0;
@@ -74,132 +74,151 @@ const RaicesIconleft = styled.img`
 `;
 
 class App extends React.Component {
-    state = {
-        value: '',
-        weatherInfo: null,
-        error: false
-    };
+  state = {
+    value: '',
+    weatherInfo: null,
+    error: false,
+  };
 
-    handleInputChange = e => {
-        this.setState({
-            value: e.target.value,
+  handleInputChange = e => {
+    this.setState({
+      value: e.target.value,
+    });
+  };
+
+  handleSearchCity = async e => {
+    e.preventDefault();
+    const { value } = this.state;
+
+    // Quitamos acentos y caracteres raros
+    const query = removeAccent(value).toLowerCase();
+
+    // Leemos el csv de provincias
+    const data = await readCSV();
+    const listCities = [];
+    const listCodes = [];
+    // eslint-disable-next-line array-callback-return
+    data.map(dt => {
+      const row = Object.values(dt)[0].split(';');
+      // console.log((row[4]))
+      listCities.push(row[4]);
+      listCodes.push(row[1].toString() + row[2].toString());
+    });
+    // Método para ayudar con el autocompletado
+    const result = helpBrowser(query, listCities);
+    const indexCode = result[0][2];
+    const code = listCodes[indexCode];
+
+    const diasURL = `http://192.168.227.41:9000/api/dias/${code}`;
+    const horasURL = `http://192.168.227.41:9000/api/horas/${code}`;
+
+    Promise.all([fetch(diasURL), fetch(horasURL)])
+      .then(([dias, horas]) => {
+        if (dias.ok && horas.ok) {
+          return Promise.all([dias.json(), horas.json()]);
+        }
+        throw Error(dias.statusText, horas.statusText);
+      })
+      .then(([dt1, dt2]) => {
+        // console.log(dt1[0]);
+        // console.log(dt2[0]);
+
+        const months = [
+          'Enero',
+          'Febrero',
+          'Marzo',
+          'Abril',
+          'Mayo',
+          'Junio',
+          'Julio',
+          'Agosto',
+          'Septiembre',
+          'Octubre',
+          'Noviembre',
+          'Deciembre',
+        ];
+        const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sábado'];
+        // Tendría que sacar la fecha desde nuestra API Fecha_prevision
+
+        const currentDate = new Date(dt1[0].fecha_prevision);
+        const date = `${days[currentDate.getDay()]} ${currentDate.getDate()} ${
+          months[currentDate.getMonth()]
+        }`;
+
+        const actualDate = new Date();
+        const newDate = `${actualDate.getFullYear()}-${`0${actualDate.getMonth() + 1}`.slice(
+          -2,
+        )}-${`0${actualDate.getDate()}`.slice(-2)} ${`0${actualDate.getHours()}`.slice(-2)}`;
+
+        // Para sacar la temperatura actual tengo que mirar que coincida la hora con la hora actual
+        // Tenemos que devolver la lista de condiciones climatológicas por horas a partir de este momento
+        // No tiene sentido devolver la de las horas pasadas
+        let climaData = [];
+        let temperatura = null;
+        let simbolo = null;
+
+        dt2.forEach((d, index) => {
+          if (d.Fecha_Prev.slice(0, 13) === newDate) {
+            temperatura = d.Temperatura;
+            climaData = dt2.slice(index, -1);
+            simbolo = d.simbolo;
+          }
         });
-    };
 
-    handleSearchCity = async (e) => {
-        e.preventDefault();
-        const {value} = this.state;
-        const code = replaceByCode(value);
-        const diasURL = `http://192.168.129.233:9000/api/dias/${code}`;
-        const horasURL = `http://192.168.129.233:9000/api/horas/${code}`;
+        const weatherInfo = {
+          city: dt1[0].municipio,
+          date,
+          main: simbolo,
+          temp: Math.floor(temperatura * 1),
+          highestTemp: Math.floor(dt1[0].temperatura_maxima * 1),
+          lowestTemp: Math.floor(dt1[0].temperatura_minima * 1),
+          humidity_manana: Math.floor(dt1[0].humedad_manana),
+          humidity_noche: Math.floor(dt1[0].humedad_noche),
+          humidity_tarde: Math.floor(dt1[0].humedad_tarde),
+          probabilidad_lluvia_manana: Math.floor(dt1[0].probabilidad_lluvia_manana),
+          probabilidad_lluvia_tarde: Math.floor(dt1[0].probabilidad_lluvia_tarde),
+          probabilidad_lluvia_noche: Math.floor(dt1[0].probabilidad_lluvia_noche),
+          forecast: climaData,
+        };
+        this.setState({
+          weatherInfo,
+          error: false,
+        });
+      })
+      .catch(error => {
+        console.log(error);
 
-        Promise.all([fetch(diasURL), fetch(horasURL)])
-            .then(([dias, horas]) => {
-                if (dias.ok && horas.ok) {
-                    return Promise.all([dias.json(), horas.json()]);
-                }
-                throw Error(dias.statusText, horas.statusText);
-            })
-            .then(([dt1, dt2]) => {
-                console.log(dt1[0]);
-                console.log(dt2);
+        this.setState({
+          error: true,
+          weatherInfo: null,
+        });
+      });
+  };
 
-                const months = [
-                    'Enero',
-                    'Febrero',
-                    'Marzo',
-                    'Abril',
-                    'Mayo',
-                    'Junio',
-                    'Julio',
-                    'Agosto',
-                    'Septiembre',
-                    'Octubre',
-                    'Noviembre',
-                    'Deciembre',
-                ];
-                const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sábado'];
-                //Tendría que sacar la fecha desde nuestra API Fecha_prevision
-
-                const currentDate = new Date(dt1[0].fecha_prevision);
-                const date = `${days[currentDate.getDay()]} ${currentDate.getDate()} ${
-                    months[currentDate.getMonth()]
-                    }`;
-
-                const d = new Date();
-                let newDate = (d.getFullYear()) + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
-                    ("0" + d.getDate()).slice(-2) + " " + ("0" + d.getHours()).slice(-2);
-
-
-                // Para sacar la temperatura actual tengo que mirar que coincida la hora con la hora actual
-                //Tenemos que devolver la lista de condiciones climatológicas por horas a partir de este momento
-                // No tiene sentido devolver la de las horas pasadas
-                let climaData = [];
-                let temperatura = null;
-                let simbolo = null;
-
-                dt2.forEach((d, index) => {
-                    if (d.Fecha_Prev.slice(0, 13) === newDate) {
-                        temperatura = d.Temperatura;
-                        climaData = dt2.slice(index, -1);
-                        simbolo = d.simbolo;
-                    }
-                });
-
-                const weatherInfo = {
-                    city: dt1[0].municipio,
-                    date,
-                    main: simbolo,
-                    temp: Math.floor(temperatura * 1),
-                    highestTemp: Math.floor(dt1[0].temperatura_maxima * 1),
-                    lowestTemp: Math.floor(dt1[0].temperatura_minima * 1),
-                    humidity_manana: Math.floor(dt1[0].humedad_manana),
-                    humidity_noche: Math.floor(dt1[0].humedad_noche),
-                    humidity_tarde: Math.floor(dt1[0].humedad_tarde),
-                    probabilidad_lluvia_manana: Math.floor(dt1[0].probabilidad_lluvia_manana),
-                    probabilidad_lluvia_tarde: Math.floor(dt1[0].probabilidad_lluvia_tarde),
-                    probabilidad_lluvia_noche: Math.floor(dt1[0].probabilidad_lluvia_noche),
-                    forecast: climaData
-                };
-                this.setState({
-                    weatherInfo,
-                    error: false,
-                });
-            })
-            .catch(error => {
-                console.log(error);
-
-                this.setState({
-                    error: true,
-                    weatherInfo: null,
-                });
-            });
-    };
-
-    render() {
-        const {value, weatherInfo, error} = this.state;
-        return (
-            <>
-                <AppTitle showLabel={(weatherInfo || error) && true}>
-                    <RaicesIconleft src={raicesImage}/>
-                </AppTitle>
-                <WeatherWrapper>
-                    <AppTitle secondary showResult={(weatherInfo || error) && true}>
-                        <RaicesIcon src={raicesImage}/>
-                        Aplicación de Meteorología
-                    </AppTitle>
-                    <SearchCity
-                        value={value}
-                        showResult={(weatherInfo || error) && true}
-                        change={this.handleInputChange}
-                        submit={this.handleSearchCity}
-                    />
-                    {weatherInfo && <Result weather={weatherInfo}/>}
-                    {error && <NotFound error={error}/>}
-                </WeatherWrapper>
-            </>
-        );
-    }
+  render() {
+    const { value, weatherInfo, error } = this.state;
+    return (
+      <>
+        <AppTitle showLabel={(weatherInfo || error) && true}>
+          <RaicesIconleft src={raicesImage} />
+        </AppTitle>
+        <WeatherWrapper>
+          <AppTitle secondary showResult={(weatherInfo || error) && true}>
+            <RaicesIcon src={raicesImage} />
+            Aplicación de Meteorología
+          </AppTitle>
+          <SearchCity
+            value={value}
+            showResult={(weatherInfo || error) && true}
+            change={this.handleInputChange}
+            submit={this.handleSearchCity}
+          />
+          {weatherInfo && <Result weather={weatherInfo} />}
+          {error && <NotFound error={error} />}
+        </WeatherWrapper>
+      </>
+    );
+  }
 }
 
 export default App;
