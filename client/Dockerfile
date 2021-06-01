@@ -1,10 +1,18 @@
-FROM node:12
+FROM node:13.12.0-alpine
 
-WORKDIR /usr/src/app/client
+WORKDIR /meteoapp
 
-COPY package*.json ./
+#env
+ENV PATH /meteoapp/node_modules/.bin:$PATH
 
-RUN npm install
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install --silent
+RUN npm install react-scripts@4.0.1 -g --silent
+
+# add app
+COPY . ./
 
 EXPOSE 3000
 

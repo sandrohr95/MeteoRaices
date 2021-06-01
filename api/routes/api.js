@@ -22,7 +22,6 @@ router.get("/horas/:id", function(req, res, next) {
         .then(json => {
             res.send(json)
         })
-
 });
 
 module.exports = router;

@@ -7,8 +7,8 @@ services:
       - "9000:9000"
     container_name: node-api
     volumes:
-       - ./api:/usr/src/app/api
-       - /usr/src/app/api/node_modules
+       - ./api:/raices/api
+       - /raices/api/node_modules
   react-ui:
     build:
       context: ./client
@@ -17,5 +17,5 @@ services:
     container_name: react-ui
     stdin_open: true
     volumes:
-       - ./client:/usr/src/app/client
-       - /usr/src/app/client/node_modules
+       - ./client:/meteoapp
+       - /meteoapp/node_modules

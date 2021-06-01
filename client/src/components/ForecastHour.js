@@ -39,14 +39,45 @@ const WeatherIcon = styled.img`
 const ForecastHour = props => {
     const {temp, month, day, hour, icon} = props;
 
-    //Este icono lo podemos coger de openwathermap según el simbolo que nos indique en nuestra API
-    // sol, luna, nube_gris_sol,nube_sol, nube_luna, nube_gris, nube, lluvia, lluvia_gris, lluvia_luna, lluvia_sol
-    console.log("ICONO: " + icon)
     let weatherIcon = null;
     if (icon === "sol") {
         weatherIcon = "01d";
-    } else {
+    }else if (icon === "luna") {
         weatherIcon = "01n";
+    }else if (icon === "nube_gris_sol") {
+        weatherIcon = "02d";
+    }else if (icon === "nube_sol") {
+        weatherIcon = "02d";
+    }else if (icon === "nube_alta_sol") {
+        weatherIcon = "02d";
+    }else if (icon === "nube_luna") {
+        weatherIcon = "02n";
+    }else if (icon === "nube_alta_luna") {
+        weatherIcon = "02n";
+    }else if (icon === "nube_gris") {
+        weatherIcon = "04d";
+    }else if (icon === "nube") {
+        weatherIcon = "03d";
+    }else if (icon === "lluvia") {
+        weatherIcon = "10d";
+    }else if (icon === "lluvia_gris") {
+        weatherIcon = "09d";
+    }else if (icon === "llovizna_gris") {
+        weatherIcon = "09d";
+    }else if (icon === "lluvia_luna") {
+        weatherIcon = "10n";
+    }else if (icon === "lluvia_sol") {
+        weatherIcon = "10d";
+    }else if (icon === "nieve") {
+        weatherIcon = "13d";
+    }else if (icon === "nieve_sol") {
+        weatherIcon = "13d";
+    }else if (icon === "nieve_luna") {
+        weatherIcon = "13d";
+    }else if (icon === "tormenta") {
+        weatherIcon = "11d";
+    }else {
+        weatherIcon = "01d";
     }
 
     const iconUrl = `https://openweathermap.org/img/w/${weatherIcon}.png`;

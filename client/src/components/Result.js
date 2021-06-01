@@ -160,26 +160,26 @@ const Result = ({weather}) => {
         />
     ));
     // sol, luna, nube_gris_sol,nube_sol, nube_luna, nube_gris, nube, lluvia, lluvia_gris, lluvia_luna, lluvia_sol, aguanieve
-    function weather_icon() {
-        let weatherIcon = null;
+    function weatherIcon() {
+            let icon = null;
         if (main === 'Thunderstorm') {
-            weatherIcon = <FontAwesomeIcon icon={faBolt}/>;
+            icon = <FontAwesomeIcon icon={faBolt}/>;
         } else if (main === 'Drizzle') {
-            weatherIcon = <FontAwesomeIcon icon={faCloudRain}/>;
+            icon = <FontAwesomeIcon icon={faCloudRain}/>;
         } else if (main === 'Rain') {
-            weatherIcon = <FontAwesomeIcon icon={faCloudShowersHeavy}/>;
+            icon = <FontAwesomeIcon icon={faCloudShowersHeavy}/>;
         } else if (main === 'Snow') {
-            weatherIcon = <FontAwesomeIcon icon={faSnowflake}/>;
-        } else if (main === 'sol') { //clear
-            weatherIcon = <FontAwesomeIcon icon={faSun}/>;
+            icon = <FontAwesomeIcon icon={faSnowflake}/>;
+        } else if (main === 'sol') {
+            icon = <FontAwesomeIcon icon={faSun}/>;
         } else if (main === 'Clouds') {
-            weatherIcon = <FontAwesomeIcon icon={faCloud}/>;
+            icon = <FontAwesomeIcon icon={faCloud}/>;
         } else {
-            weatherIcon = <FontAwesomeIcon icon={faSmog}/>;
+            icon = <FontAwesomeIcon icon={faSmog}/>;
         }
-        return weatherIcon
+        return icon
     }
-    let icon = weather_icon();
+    const icon = weatherIcon();
 
     return (
         <Results>
