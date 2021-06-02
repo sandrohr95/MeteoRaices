@@ -91,20 +91,21 @@ class App extends React.Component {
         e.preventDefault();
         const {value} = this.state;
 
-        // Quitamos acentos y caracteres raros
+        /* Quitamos los acentos o caracteres raros en la búsqueda */
         const query = removeAccent(value).toLowerCase();
 
-        // Leemos el csv de provincias
+        /* Leemos el CSV que contiene el código de todas las provincias.
+           Este código lo recuperamos para extraer la información de la API
+         */
         const data = await readCSV();
         const listCities = [];
         const listCodes = [];
-        // eslint-disable-next-line array-callback-return
         data.map(dt => {
             const row = Object.values(dt)[0].split(';');
             listCities.push(row[4]);
             listCodes.push(row[1].toString() + row[2].toString());
         });
-        // Método para ayudar con el autocompletado
+        /* Método para autocompletado en la búsqueda */
         const result = helpBrowser(query, listCities);
         const indexCode = result[0][2];
         const code = listCodes[indexCode];
@@ -135,7 +136,6 @@ class App extends React.Component {
                     'Deciembre',
                 ];
                 const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sábado'];
-                // Tendría que sacar la fecha desde nuestra API Fecha_prevision
 
                 const currentDate = new Date(dt1[0].fecha_prevision);
                 const date = `${days[currentDate.getDay()]} ${currentDate.getDate()} ${
@@ -148,19 +148,21 @@ class App extends React.Component {
                 )}-${`0${actualDate.getDate()}`.slice(-2)} ${`0${actualDate.getHours()}`.slice(-2)}`;
 
                 console.log(newDate);
-                console.log(dt2[dt2.length - 1].Fecha_Prev.slice(0, 13))
-                // Para sacar la temperatura actual tengo que mirar que coincida la hora con la hora actual
-                // Tenemos que devolver la lista de condiciones climatológicas por horas a partir de este momento
-                // No tiene sentido devolver la de las horas pasadas
+
+                /*Para sacar la temperatura actual tengo que mirar que coincida la hora con la hora actual
+                Tenemos que devolver la lista de condiciones climatológicas por horas a partir de este momento
+                No tiene sentido devolver la de las horas pasadas */
+
                 let climaData = [];
                 let temperatura = null;
                 let simbolo = null;
 
                 dt2.forEach((d, index) => {
                     if (d.Fecha_Prev.slice(0, 13) === newDate) {
+                        console.log(d);
                         temperatura = d.Temperatura;
                         climaData = dt2.slice(index, -1);
-                        simbolo = d.simbolo;
+                        simbolo = d.Simbolo;
                     }
                 });
 
